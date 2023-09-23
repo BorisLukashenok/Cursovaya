@@ -8,7 +8,7 @@
 
 ## Создание и обучение модели
 
-[Ноутбук с обучением:](Cursovaya_PyTorch.ipynb)
+[Ноутбук с обучением:](Cursovaya_PyTorch.ipynb) модели на датасете [https://www.kaggle.com/datasets/gti-upm/leapgestrecog](https://www.kaggle.com/datasets/gti-upm/leapgestrecog)
 
 ## Приложение работающее с моделью
 
