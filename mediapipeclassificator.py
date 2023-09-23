@@ -13,7 +13,7 @@ video = cv2.VideoCapture(0)
 
 def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
     # cv2.imshow('Show2', output_image.numpy_view())
-    
+    # cv2.imshow почему-то не работает в callback, пришлось выкидывать результат в глобальную область
     global category
 
     category = ''
@@ -35,11 +35,8 @@ options = GestureRecognizerOptions(
 
 timestamp = 0
 with GestureRecognizer.create_from_options(options) as recognizer:
-  # The recognizer is initialized. Use it here.
     while cv2.waitKey(1) < 0:
-        # Capture frame-by-frame
         ret, frame = video.read()
-
         if not ret:
             print("Ignoring empty frame")
             break

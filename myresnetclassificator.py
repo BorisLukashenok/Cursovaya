@@ -2,6 +2,7 @@
 import cv2
 import torch
 import torchvision.transforms as tt
+import numpy as np
 
 # функция определения лиц
 
@@ -52,17 +53,24 @@ def handClassificator(net, img):
                  'palm_moved',
                  'c',
                  'down']
-    image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # оставляем на изображении только кожу, убирая фон
+    imageYCrCb = cv2.cvtColor(img,cv2.COLOR_BGR2YCR_CB)
+    skinRegionYCrCb = cv2.inRange(imageYCrCb,min_YCrCb,max_YCrCb)
+    skinYCrCb = cv2.bitwise_and(img, img, mask = skinRegionYCrCb)
+    # skinYCrCb[skinYCrCb>0]=255
+    # Подгоняем изображение под вход нейросети
+    image = cv2.cvtColor(skinYCrCb, cv2.COLOR_BGR2GRAY)
     image = cv2.resize(image, (128, 128))
+    # image[image>0]+=120
     image = cv2.merge((image, image, image))
-    cv2.imshow('ee', image)
+    cv2.imshow('Input', image)
     image = torch.FloatTensor(image)
-    
     output = net(image.permute(2, 0, 1).unsqueeze(0).cuda())
-    return CLASSNAME[output[0].argmax()]
-   
+    clas = output[0].argmax()
+    return CLASSNAME[clas] if output[0][clas] > 0.7 else None
 
-
+min_YCrCb = np.array([0,133,77],np.uint8)
+max_YCrCb = np.array([235,173,127],np.uint8)
 # загружаем веса для распознавания лиц
 faceProto = "Model/opencv_face_detector.pbtxt"
 # и конфигурацию самой нейросети — слои и связи нейронов
@@ -70,6 +78,7 @@ faceModel = "Model/opencv_face_detector_uint8.pb"
 
 # запускаем нейросеть по распознаванию лиц
 faceNet = cv2.dnn.readNet(model=faceModel, config=faceProto)
+# Загружаем сеть для распоснования жестов
 resnet = torch.load('./Model/resnet.pth')
 resnet.eval()
 # получаем видео с камеры
@@ -85,11 +94,8 @@ while cv2.waitKey(1) < 0:
         break
     # распознаём лица в кадре
     resultImg, faceBoxes = highlightFace(faceNet, frame)
+    # распознаем жесты
     classes = handClassificator(resnet, frame)
-    print(classes)
-    # если лиц нет
-    # if not faceBoxes:
-    #     # выводим в консоли, что лицо не найдено
-    #     print("Лица не распознаны")
-    # выводим картинку с камеры
-    cv2.imshow("Face detection", resultImg)
+    if classes:
+        print(classes)
+    cv2.imshow("Face-hand detection", resultImg)
